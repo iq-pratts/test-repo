@@ -9,7 +9,9 @@ import {
     GraduationCap,
     Settings,
     LogOut,
-    TrendingUp
+    TrendingUp,
+    Target,
+    DollarSign
 } from 'lucide-react';
 import { CurrencySwitcher } from './CurrencySwitcher';
 import { useAuth } from '@/context/AuthContext';
@@ -19,6 +21,8 @@ import { SignOutConfirmModal } from '@/components/modals/SignOutConfirmModal';
 const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: Receipt, label: 'Expenses', path: '/expenses' },
+    { icon: DollarSign, label: 'Income', path: '/income' },
+    { icon: Target, label: 'Goals', path: '/goals' },
     { icon: Users, label: 'Groups', path: '/groups' },
     { icon: Brain, label: 'AI Advisor', path: '/advisor' },
     { icon: GraduationCap, label: 'Learn', path: '/learn' },
