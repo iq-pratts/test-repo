@@ -6,7 +6,7 @@ import { useCurrency } from '@/context/CurrencyContext';
 import { Search, Filter, Download, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
     Select,
     SelectContent,
@@ -26,77 +26,47 @@ const CATEGORY_OPTIONS = {
 const ITEMS_PER_PAGE = 10;
 
 export default function Income() {
-    const { income, loading } = useIncome();
+    const { income, loading, filters, setFilters } = useIncome();
     const { formatCurrency } = useCurrency();
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('');
-    const [fromDate, setFromDate] = useState('');
-    const [toDate, setToDate] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
 
-    // Filter income
-    const filteredIncome = useMemo(() => {
-        return income.filter(item => {
-            const matchesSearch =
-                item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                item.category.toLowerCase().includes(searchQuery.toLowerCase());
-
-            const matchesCategory = !selectedCategory || item.category === selectedCategory;
-
-            let matchesDateRange = true;
-            if (fromDate || toDate) {
-                const itemDate = new Date(item.date);
-                if (fromDate) {
-                    const from = new Date(fromDate);
-                    from.setHours(0, 0, 0, 0);
-                    matchesDateRange = itemDate >= from;
-                }
-                if (toDate && matchesDateRange) {
-                    const to = new Date(toDate);
-                    to.setHours(23, 59, 59, 999);
-                    matchesDateRange = itemDate <= to;
-                }
-            }
-
-            return matchesSearch && matchesCategory && matchesDateRange;
-        });
-    }, [income, searchQuery, selectedCategory, fromDate, toDate]);
-
-    // Pagination
-    const totalPages = Math.ceil(filteredIncome.length / ITEMS_PER_PAGE);
-    const paginatedIncome = useMemo(() => {
-        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        return filteredIncome.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-    }, [filteredIncome, currentPage]);
-
-    // Reset to first page when filters change
-    const handleFilterChange = (setter) => (value) => {
+    const handleFilterChange = (filterName, value) => {
         setCurrentPage(1);
-        setter(value);
+        setFilters(prev => ({ ...prev, [filterName]: value }));
     };
 
-    const totalAmount = filteredIncome.reduce((sum, i) => sum + i.amount, 0);
+    const clearFilters = () => {
+        setCurrentPage(1);
+        setFilters({});
+    };
 
-    // Calculate this week's income
+    // Pagination
+    const totalPages = Math.ceil(income.length / ITEMS_PER_PAGE);
+    const paginatedIncome = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        return income.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [income, currentPage]);
+
+    const totalAmount = income.reduce((sum, i) => sum + i.amount, 0);
+
     const getThisWeekTotal = () => {
         const now = new Date();
         const startOfWeek = new Date(now);
         startOfWeek.setDate(now.getDate() - now.getDay());
         startOfWeek.setHours(0, 0, 0, 0);
 
-        return filteredIncome
+        return income
             .filter(i => new Date(i.date) >= startOfWeek)
             .reduce((sum, i) => sum + i.amount, 0);
     };
 
-    // Calculate this month's income
     const getThisMonthTotal = () => {
         const now = new Date();
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
 
-        return filteredIncome
+        return income
             .filter(i => {
                 const itemDate = new Date(i.date);
                 return (
@@ -107,15 +77,14 @@ export default function Income() {
             .reduce((sum, i) => sum + i.amount, 0);
     };
 
-    // Calculate average income per transaction
     const getAverageIncome = () => {
-        return filteredIncome.length > 0 ? totalAmount / filteredIncome.length : 0;
+        return income.length > 0 ? totalAmount / income.length : 0;
     };
 
     const handleExport = () => {
         const csvContent = [
             ['Date', 'Description', 'Category', 'Amount'].join(','),
-            ...filteredIncome.map(i => [
+            ...income.map(i => [
                 new Date(i.date).toLocaleDateString(),
                 i.description,
                 i.category,
@@ -131,25 +100,16 @@ export default function Income() {
         a.click();
     };
 
-    const clearFilters = () => {
-        setSearchQuery('');
-        setSelectedCategory('');
-        setFromDate('');
-        setToDate('');
-        setCurrentPage(1);
-    };
-
-    const hasActiveFilters = searchQuery || selectedCategory || fromDate || toDate;
+    const hasActiveFilters = Object.values(filters).some(v => v);
 
     return (
         <AppLayout>
             <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
-                {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                     <div className="min-w-0">
                         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Income</h1>
                         <p className="text-xs sm:text-sm text-muted-foreground">
-                            {paginatedIncome.length} of {filteredIncome.length} transactions • {formatCurrency(totalAmount)} total
+                            {paginatedIncome.length} of {income.length} transactions • {formatCurrency(totalAmount)} total
                         </p>
                     </div>
                     <div className="flex items-center gap-2 sm:gap-3">
@@ -160,14 +120,13 @@ export default function Income() {
                     </div>
                 </div>
 
-                {/* Search Bar */}
                 <div className="flex gap-2 sm:gap-3">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
                             placeholder="Search income..."
-                            value={searchQuery}
-                            onChange={(e) => handleFilterChange(setSearchQuery)(e.target.value)}
+                            value={filters.keyword || ''}
+                            onChange={(e) => handleFilterChange('keyword', e.target.value)}
                             className="pl-9 sm:pl-10 text-sm"
                         />
                     </div>
@@ -181,14 +140,12 @@ export default function Income() {
                     </Button>
                 </div>
 
-                {/* Filters */}
                 {showFilters && (
                     <div className="bg-card border border-border rounded-lg sm:rounded-xl p-4 space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {/* Category Filter */}
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-foreground">Category</label>
-                                <Select value={selectedCategory} onValueChange={handleFilterChange(setSelectedCategory)}>
+                                <Select value={filters.category || ''} onValueChange={(value) => handleFilterChange('category', value)}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="All Categories" />
                                     </SelectTrigger>
@@ -201,27 +158,24 @@ export default function Income() {
                                 </Select>
                             </div>
 
-                            {/* From Date Filter */}
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-foreground">From Date</label>
                                 <Input
                                     type="date"
-                                    value={fromDate}
-                                    onChange={(e) => handleFilterChange(setFromDate)(e.target.value)}
+                                    value={filters.startDate || ''}
+                                    onChange={(e) => handleFilterChange('startDate', e.target.value)}
                                 />
                             </div>
 
-                            {/* To Date Filter */}
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-foreground">To Date</label>
                                 <Input
                                     type="date"
-                                    value={toDate}
-                                    onChange={(e) => handleFilterChange(setToDate)(e.target.value)}
+                                    value={filters.endDate || ''}
+                                    onChange={(e) => handleFilterChange('endDate', e.target.value)}
                                 />
                             </div>
 
-                            {/* Clear Filters */}
                             {hasActiveFilters && (
                                 <div className="flex items-end">
                                     <Button
@@ -239,7 +193,6 @@ export default function Income() {
                     </div>
                 )}
 
-                {/* Summary Cards */}
                 <div className="grid grid-cols-3 gap-2 sm:gap-4">
                     <div className="bg-card rounded-lg sm:rounded-xl p-3 sm:p-4 border border-border">
                         <p className="text-[10px] sm:text-xs text-muted-foreground">This Week</p>
@@ -261,10 +214,8 @@ export default function Income() {
                     </div>
                 </div>
 
-                {/* Income List */}
                 <IncomeList income={paginatedIncome} />
 
-                {/* Pagination */}
                 {totalPages > 1 && (
                     <div className="flex items-center justify-center gap-2 mt-6">
                         <Button

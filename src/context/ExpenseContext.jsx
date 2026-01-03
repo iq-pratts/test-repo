@@ -1,109 +1,108 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { expensesService } from '@/lib/firestore';
-import { auth } from '@/config/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { firestoreService } from '@/services/firestoreService';
+import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
 
-const ExpenseContext = createContext(undefined);
+const ExpenseContext = createContext();
 
-export function ExpenseProvider({ children }) {
+export const useExpenses = () => {
+    const context = useContext(ExpenseContext);
+    if (context === undefined) {
+        throw new Error('useExpenses must be used within an ExpenseProvider');
+    }
+    return context;
+};
+
+export const ExpenseProvider = ({ children }) => {
     const [expenses, setExpenses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [filters, setFilters] = useState({});
+    const { user } = useAuth();
 
-    // Monitor auth state and load expenses when user is authenticated
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setIsAuthenticated(!!user);
-            if (user) {
-                loadExpenses();
-            } else {
-                setExpenses([]);
-                setLoading(false);
-            }
-        });
-
-        return unsubscribe;
-    }, []);
-
-    const loadExpenses = async () => {
-        try {
+    const loadExpenses = useCallback(async () => {
+        if (user) {
             setLoading(true);
             setError(null);
-            const data = await expensesService.getAll();
-            setExpenses(data || []);
-        } catch (err) {
-            setError(err.message);
-            console.error('Failed to load expenses:', err);
+            try {
+                const expenseData = await firestoreService.fetchData('expenses', { uid: user.uid, filters });
+                setExpenses(expenseData);
+            } catch (err) {
+                console.error("Error fetching expenses: ", err);
+                setError(err.message);
+                setExpenses([]);
+            }
+            setLoading(false);
+        } else {
             setExpenses([]);
-        } finally {
             setLoading(false);
         }
-    };
+    }, [user, filters]);
 
-    const addExpense = async (expense) => {
-        try {
-            const newExpense = await expensesService.create(expense);
-            setExpenses(prev => [newExpense, ...prev]);
-            toast.success('Expense added successfully');
-            return newExpense;
-        } catch (err) {
-            console.error('Failed to add expense:', err);
-            toast.error(err.message || 'Failed to add expense');
-            throw err;
+    useEffect(() => {
+        loadExpenses();
+    }, [loadExpenses]);
+
+    const addExpense = async (expenseData) => {
+        if (user) {
+            try {
+                const newExpense = await firestoreService.addData('expenses', { uid: user.uid, data: expenseData });
+                setExpenses(prev => [newExpense, ...prev]);
+                toast.success('Expense added successfully');
+                return newExpense;
+            } catch (err) {
+                console.error('Failed to add expense:', err);
+                toast.error(err.message || 'Failed to add expense');
+                throw err;
+            }
         }
     };
 
     const deleteExpense = async (id) => {
-        try {
-            await expensesService.delete(id);
-            setExpenses(prev => prev.filter(e => e.id !== id));
-            toast.success('Expense deleted successfully');
-        } catch (err) {
-            console.error('Failed to delete expense:', err);
-            toast.error(err.message || 'Failed to delete expense');
-            throw err;
+        if (user) {
+            try {
+                await firestoreService.deleteData('expenses', { uid: user.uid, id });
+                setExpenses(prev => prev.filter(e => e.id !== id));
+                toast.success('Expense deleted successfully');
+            } catch (err) {
+                console.error('Failed to delete expense:', err);
+                toast.error(err.message || 'Failed to delete expense');
+                throw err;
+            }
         }
     };
 
-    const updateExpense = async (id, updates) => {
-        try {
-            const updatedExpense = await expensesService.update(id, updates);
-            setExpenses(prev =>
-                prev.map(e =>
-                    e.id === id ? updatedExpense : e
-                )
-            );
-            toast.success('Expense updated successfully');
-            return updatedExpense;
-        } catch (err) {
-            console.error('Failed to update expense:', err);
-            toast.error(err.message || 'Failed to update expense');
-            throw err;
+    const updateExpense = async (id, updatedData) => {
+        if (user) {
+            try {
+                await firestoreService.updateData('expenses', { uid: user.uid, id, data: updatedData });
+                setExpenses(prev =>
+                    prev.map(e =>
+                        e.id === id ? { ...e, ...updatedData } : e
+                    )
+                );
+                toast.success('Expense updated successfully');
+                return { id, ...updatedData };
+            } catch (err) {
+                console.error('Failed to update expense:', err);
+                toast.error(err.message || 'Failed to update expense');
+                throw err;
+            }
         }
     };
-
+    
     const getTotalByCategory = () => {
-        const totals = {
-            food: 0,
-            transport: 0,
-            shopping: 0,
-            entertainment: 0,
-            bills: 0,
-            healthcare: 0,
-            education: 0,
-            travel: 0,
-            other: 0,
-        };
-
+        const totals = {};
         expenses.forEach(expense => {
-            totals[expense.category] += expense.amount;
+            if(totals[expense.category]){
+                totals[expense.category] += expense.amount;
+            } else {
+                totals[expense.category] = expense.amount;
+            }
         });
-
         return totals;
     };
-
+    
     const getMonthlyTotal = () => {
         const now = new Date();
         const currentMonth = now.getMonth();
@@ -152,11 +151,11 @@ export function ExpenseProvider({ children }) {
                 expenses,
                 loading,
                 error,
-                isAuthenticated,
+                filters,
+                setFilters,
                 addExpense,
                 deleteExpense,
                 updateExpense,
-                loadExpenses,
                 getTotalByCategory,
                 getMonthlyTotal,
                 getMonthlyTrend,
@@ -165,12 +164,4 @@ export function ExpenseProvider({ children }) {
             {children}
         </ExpenseContext.Provider>
     );
-}
-
-export function useExpenses() {
-    const context = useContext(ExpenseContext);
-    if (context === undefined) {
-        throw new Error('useExpenses must be used within an ExpenseProvider');
-    }
-    return context;
 }

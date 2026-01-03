@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { db as firestore } from '@/config/firebase';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { firestoreService } from '@/services/firestoreService';
 import { useAuth } from './AuthContext';
 
 const GoalContext = createContext();
@@ -10,20 +9,21 @@ export const useGoals = () => useContext(GoalContext);
 export const GoalProvider = ({ children }) => {
     const [goals, setGoals] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [filters, setFilters] = useState({});
     const { user } = useAuth();
 
     const fetchGoals = useCallback(async () => {
         if (user) {
+            setLoading(true);
             try {
-                const querySnapshot = await getDocs(collection(firestore, `users/${user.uid}/goals`));
-                const goalsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const goalsData = await firestoreService.fetchData('goals', { uid: user.uid, filters });
                 setGoals(goalsData);
             } catch (error) {
                 console.error("Error fetching goals: ", error);
             }
+            setLoading(false);
         }
-        setLoading(false);
-    }, [user]);
+    }, [user, filters]);
 
     useEffect(() => {
         fetchGoals();
@@ -31,30 +31,27 @@ export const GoalProvider = ({ children }) => {
 
     const addGoal = async (goalData) => {
         if (user) {
-            const newGoal = { ...goalData, userId: user.uid, currentAmount: 0 };
-            const docRef = await addDoc(collection(firestore, `users/${user.uid}/goals`), newGoal);
-            setGoals(prev => [...prev, { id: docRef.id, ...newGoal }]);
+            const newGoal = await firestoreService.addData('goals', { uid: user.uid, data: { ...goalData, currentAmount: 0 } });
+            setGoals(prev => [newGoal, ...prev]);
         }
     };
 
     const updateGoal = async (id, updatedData) => {
         if (user) {
-            const docRef = doc(firestore, `users/${user.uid}/goals`, id);
-            await updateDoc(docRef, updatedData);
+            await firestoreService.updateData('goals', { uid: user.uid, id, data: updatedData });
             setGoals(prev => prev.map(item => (item.id === id ? { ...item, ...updatedData } : item)));
         }
     };
 
     const deleteGoal = async (id) => {
         if (user) {
-            const docRef = doc(firestore, `users/${user.uid}/goals`, id);
-            await deleteDoc(docRef);
+            await firestoreService.deleteData('goals', { uid: user.uid, id });
             setGoals(prev => prev.filter(item => item.id !== id));
         }
     };
 
     return (
-        <GoalContext.Provider value={{ goals, loading, addGoal, updateGoal, deleteGoal }}>
+        <GoalContext.Provider value={{ goals, loading, addGoal, updateGoal, deleteGoal, filters, setFilters }}>
             {children}
         </GoalContext.Provider>
     );

@@ -1,0 +1,46 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "income",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+        "collectionGroup": "expenses",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "name",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "date",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "goals",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "name",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "date",
+            "order": "DESCENDING"
+          }
+        ]
+      }
+  ]
+}
