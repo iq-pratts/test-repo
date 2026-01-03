@@ -1,0 +1,13 @@
+*node_modules/
+*.log
+dist/
+.env
+.vscode/
+.DS_Store
+/build/
+/coverage/
+/ios/
+/android/
+.idea/
+*.iml
+*.swp
