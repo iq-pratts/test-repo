@@ -38,8 +38,8 @@ export const IncomeProvider = ({ children }) => {
 
     const updateIncome = async (id, updatedData) => {
         if (user) {
-            await firestoreService.updateData('income', { uid: user.uid, id, data: updatedData });
-            setIncomes(prev => prev.map(item => (item.id === id ? { ...item, ...updatedData } : item)));
+            const returnedUpdatedData = await firestoreService.updateData('income', { uid: user.uid, id, data: updatedData });
+            setIncomes(prev => prev.map(item => (item.id === id ? { ...item, ...returnedUpdatedData } : item)));
         }
     };
 
@@ -56,8 +56,9 @@ export const IncomeProvider = ({ children }) => {
         if (!incomes) return 0;
         return incomes
             .filter(item => {
-                if (!item.date || typeof item.date.toDate !== 'function') return false;
-                const itemDate = item.date.toDate();
+                if (!item.date) return false;
+                const itemDate = item.date.toDate ? item.date.toDate() : new Date(item.date);
+                if (isNaN(itemDate.getTime())) return false; // Invalid date
                 return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
             })
             .reduce((total, item) => total + item.amount, 0);

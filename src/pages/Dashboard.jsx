@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { SpendingChart } from '@/components/dashboard/SpendingChart';
@@ -10,7 +10,9 @@ import { useIncome } from '@/context/IncomeContext';
 import { useGoals } from '@/context/GoalContext';
 import { useCurrency } from '@/context/CurrencyContext';
 import { useBudget } from '@/context/BudgetContext';
-import { Wallet, TrendingUp, Target, PiggyBank } from 'lucide-react';
+import { Wallet, TrendingUp, Target, PiggyBank, Edit } from 'lucide-react';
+import { UpdateBudgetDialog } from '@/components/budget/UpdateBudgetDialog';
+import { Button } from '@/components/ui/button';
 
 export default function Dashboard() {
   const { expenses, getMonthlyTotal: getMonthlyExpenseTotal } = useExpenses();
@@ -18,6 +20,7 @@ export default function Dashboard() {
   const { goals } = useGoals();
   const { formatCurrency } = useCurrency();
   const { budget } = useBudget();
+  const [isBudgetDialogOpen, setIsBudgetDialogOpen] = useState(false);
 
   const monthlyExpenses = useMemo(() => getMonthlyExpenseTotal(), [expenses, getMonthlyExpenseTotal]);
   const monthlyIncome = useMemo(() => getMonthlyIncomeTotal(), [incomes, getMonthlyIncomeTotal]);
@@ -76,7 +79,12 @@ export default function Dashboard() {
             change={budgetRemaining >= 0 ? "You're in the green" : "You're in the red"}
             changeType={budgetRemaining >= 0 ? 'positive' : 'negative'}
             icon={Target}
-            iconColor="bg-accent/10 text-accent"
+            iconColor="bg-accent/90 text-orange-400"
+            action={
+              <Button variant="ghost" size="icon" onClick={() => setIsBudgetDialogOpen(true)}>
+                <Edit className="w-4 h-4 text-muted-foreground" />
+              </Button>
+            }
           />
           <StatCard
             title="Savings Goal"
@@ -102,6 +110,7 @@ export default function Dashboard() {
           <QuickActions />
         </div>
       </div>
+      <UpdateBudgetDialog isOpen={isBudgetDialogOpen} onClose={() => setIsBudgetDialogOpen(false)} />
     </AppLayout>
   );
 }

@@ -6,10 +6,12 @@ export function StatCard({
   change, 
   changeType = 'neutral', 
   icon: Icon,
-  iconColor = 'bg-primary/10 text-primary'
+  iconColor = 'bg-primary/10 text-primary',
+  action
 }) {
   return (
-    <div className="bg-card rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 border border-border shadow-sm hover:shadow-md transition-all duration-300 animate-fade-in">
+    <div className="bg-card rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 border border-border shadow-sm hover:shadow-md transition-all duration-300 animate-fade-in relative">
+       {action && <div className="absolute bottom-2 right-2">{action}</div>}
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1 sm:space-y-2 min-w-0 flex-1">
           <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{title}</p>
