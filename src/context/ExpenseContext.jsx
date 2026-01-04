@@ -33,9 +33,6 @@ export const ExpenseProvider = ({ children }) => {
                 setExpenses([]);
             }
             setLoading(false);
-        } else {
-            setExpenses([]);
-            setLoading(false);
         }
     }, [user, filters]);
 
@@ -45,49 +42,29 @@ export const ExpenseProvider = ({ children }) => {
 
     const addExpense = async (expenseData) => {
         if (user) {
-            try {
-                const newExpense = await firestoreService.addData('expenses', { uid: user.uid, data: expenseData });
-                setExpenses(prev => [newExpense, ...prev]);
-                toast.success('Expense added successfully');
-                return newExpense;
-            } catch (err) {
-                console.error('Failed to add expense:', err);
-                toast.error(err.message || 'Failed to add expense');
-                throw err;
-            }
+            const newExpense = await firestoreService.addData('expenses', { uid: user.uid, data: expenseData });
+            setExpenses(prev => [newExpense, ...prev]);
+            toast.success('Expense added successfully');
         }
     };
 
     const deleteExpense = async (id) => {
         if (user) {
-            try {
-                await firestoreService.deleteData('expenses', { uid: user.uid, id });
-                setExpenses(prev => prev.filter(e => e.id !== id));
-                toast.success('Expense deleted successfully');
-            } catch (err) {
-                console.error('Failed to delete expense:', err);
-                toast.error(err.message || 'Failed to delete expense');
-                throw err;
-            }
+            await firestoreService.deleteData('expenses', { uid: user.uid, id });
+            setExpenses(prev => prev.filter(e => e.id !== id));
+            toast.success('Expense deleted successfully');
         }
     };
 
     const updateExpense = async (id, updatedData) => {
         if (user) {
-            try {
-                await firestoreService.updateData('expenses', { uid: user.uid, id, data: updatedData });
-                setExpenses(prev =>
-                    prev.map(e =>
-                        e.id === id ? { ...e, ...updatedData } : e
-                    )
-                );
-                toast.success('Expense updated successfully');
-                return { id, ...updatedData };
-            } catch (err) {
-                console.error('Failed to update expense:', err);
-                toast.error(err.message || 'Failed to update expense');
-                throw err;
-            }
+            const returnedUpdatedData = await firestoreService.updateData('expenses', { uid: user.uid, id, data: updatedData });
+            setExpenses(prev =>
+                prev.map(e =>
+                    e.id === id ? { ...e, ...returnedUpdatedData } : e
+                )
+            );
+            toast.success('Expense updated successfully');
         }
     };
     
@@ -103,21 +80,23 @@ export const ExpenseProvider = ({ children }) => {
         return totals;
     };
     
-    const getMonthlyTotal = () => {
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
+    const getMonthlyTotal = useCallback(() => {
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        if (!expenses) return 0;
 
         return expenses
-            .filter(expense => {
-                const expenseDate = new Date(expense.date);
-                return (
-                    expenseDate.getMonth() === currentMonth &&
-                    expenseDate.getFullYear() === currentYear
-                );
+            .filter(item => {
+                if (!item.date) return false;
+
+                const itemDate = item.date.toDate ? item.date.toDate() : new Date(item.date);
+                
+                if (isNaN(itemDate.getTime())) return false;
+
+                return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
             })
-            .reduce((sum, expense) => sum + expense.amount, 0);
-    };
+            .reduce((total, item) => total + item.amount, 0);
+    }, [expenses]);
 
     const getMonthlyTrend = () => {
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

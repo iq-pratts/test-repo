@@ -54,15 +54,20 @@ export const IncomeProvider = ({ children }) => {
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
         if (!incomes) return 0;
+
         return incomes
             .filter(item => {
                 if (!item.date) return false;
+
                 const itemDate = item.date.toDate ? item.date.toDate() : new Date(item.date);
-                if (isNaN(itemDate.getTime())) return false; // Invalid date
+                
+                if (isNaN(itemDate.getTime())) return false;
+
                 return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
             })
             .reduce((total, item) => total + item.amount, 0);
     }, [incomes]);
+
 
     return (
         <IncomeContext.Provider value={{ incomes, loading, addIncome, updateIncome, deleteIncome, filters, setFilters, getMonthlyTotal }}>
