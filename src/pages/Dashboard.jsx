@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { SpendingChart } from '@/components/dashboard/SpendingChart';
@@ -5,14 +6,42 @@ import { CategoryBreakdown } from '@/components/dashboard/CategoryBreakdown';
 import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { useExpenses } from '@/context/ExpenseContext';
+import { useIncome } from '@/context/IncomeContext';
+import { useGoals } from '@/context/GoalContext';
 import { useCurrency } from '@/context/CurrencyContext';
-import { Wallet, TrendingDown, Target, PiggyBank } from 'lucide-react';
+import { useBudget } from '@/context/BudgetContext';
+import { Wallet, TrendingUp, Target, PiggyBank } from 'lucide-react';
 
 export default function Dashboard() {
-  const { expenses, getMonthlyTotal } = useExpenses();
+  const { expenses, getMonthlyTotal: getMonthlyExpenseTotal } = useExpenses();
+  const { incomes, getMonthlyTotal: getMonthlyIncomeTotal } = useIncome();
+  const { goals } = useGoals();
   const { formatCurrency } = useCurrency();
-  const monthlyTotal = getMonthlyTotal();
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const { budget } = useBudget();
+
+  const monthlyExpenses = useMemo(() => getMonthlyExpenseTotal(), [expenses, getMonthlyExpenseTotal]);
+  const monthlyIncome = useMemo(() => getMonthlyIncomeTotal(), [incomes, getMonthlyIncomeTotal]);
+  const budgetRemaining = useMemo(() => budget - monthlyExpenses, [budget, monthlyExpenses]);
+  const totalGoalsSaved = useMemo(() => goals.reduce((sum, g) => sum + g.currentAmount, 0), [goals]);
+  const totalGoalsTarget = useMemo(() => goals.reduce((sum, g) => sum + g.targetAmount, 0), [goals]);
+
+  const savingsGoalProgress = totalGoalsTarget > 0 ? (totalGoalsSaved / totalGoalsTarget) * 100 : 0;
+
+  const hasData = useMemo(() => expenses.length > 0 || incomes.length > 0 || goals.length > 0, [expenses, incomes, goals]);
+
+  if (!hasData) {
+    return (
+      <AppLayout>
+        <div className="p-4 sm:p-6 lg:p-8 text-center">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mb-2">Welcome!</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mb-4">
+            It looks like you don't have any data yet. Add some incomes, expenses, or goals to get started.
+          </p>
+          <QuickActions />
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -20,52 +49,52 @@ export default function Dashboard() {
         {/* Header */}
         <div className="space-y-1">
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Track your financial health at a glance</p>
+          <p className="text-sm sm:text-base text-muted-foreground">Here's a summary of your financial activity for the month.</p>
         </div>
 
-        {/* Stats Grid - 1 col mobile, 2 cols tablet, 4 cols desktop */}
+        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
           <StatCard
+            title="Monthly Income"
+            value={formatCurrency(monthlyIncome)}
+            change={`${incomes.length} transactions`}
+            changeType="neutral"
+            icon={TrendingUp}
+            iconColor="bg-success/10 text-success"
+          />
+          <StatCard
             title="Monthly Spending"
-            value={formatCurrency(monthlyTotal)}
-            change="12% vs last month"
-            changeType="negative"
+            value={formatCurrency(monthlyExpenses)}
+            change={`${expenses.length} transactions`}
+            changeType="neutral"
             icon={Wallet}
             iconColor="bg-primary/10 text-primary"
           />
           <StatCard
-            title="Total Expenses"
-            value={formatCurrency(totalExpenses)}
-            change={`${expenses.length} transactions`}
-            changeType="neutral"
-            icon={TrendingDown}
-            iconColor="bg-destructive/10 text-destructive"
-          />
-          <StatCard
             title="Budget Remaining"
-            value={formatCurrency(1180)}
-            change="59% remaining"
-            changeType="positive"
+            value={formatCurrency(budgetRemaining)}
+            change={budgetRemaining >= 0 ? "You're in the green" : "You're in the red"}
+            changeType={budgetRemaining >= 0 ? 'positive' : 'negative'}
             icon={Target}
-            iconColor="bg-success/10 text-success"
+            iconColor="bg-accent/10 text-accent"
           />
           <StatCard
             title="Savings Goal"
-            value={formatCurrency(3500)}
-            change="On track"
-            changeType="positive"
+            value={formatCurrency(totalGoalsSaved)}
+            change={`${savingsGoalProgress.toFixed(0)}% of your goal`}
+            changeType={savingsGoalProgress >= 50 ? "positive" : "neutral"}
             icon={PiggyBank}
-            iconColor="bg-accent/10 text-accent"
+            iconColor="bg-success/10 text-success"
           />
         </div>
 
-        {/* Charts Row - Stack on mobile */}
+        {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <SpendingChart />
           <CategoryBreakdown />
         </div>
 
-        {/* Bottom Row - Stack on mobile/tablet */}
+        {/* Bottom Row */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
           <div className="xl:col-span-2">
             <RecentTransactions />

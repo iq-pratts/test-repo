@@ -26,7 +26,7 @@ const CATEGORY_OPTIONS = {
 const ITEMS_PER_PAGE = 10;
 
 export default function Income() {
-    const { income, loading, filters, setFilters } = useIncome();
+    const { incomes, loading, filters, setFilters } = useIncome();
     const { formatCurrency } = useCurrency();
     const [showFilters, setShowFilters] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -42,13 +42,13 @@ export default function Income() {
     };
 
     // Pagination
-    const totalPages = Math.ceil(income.length / ITEMS_PER_PAGE);
-    const paginatedIncome = useMemo(() => {
+    const totalPages = Math.ceil(incomes.length / ITEMS_PER_PAGE);
+    const paginatedIncomes = useMemo(() => {
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        return income.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-    }, [income, currentPage]);
+        return incomes.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [incomes, currentPage]);
 
-    const totalAmount = income.reduce((sum, i) => sum + i.amount, 0);
+    const totalAmount = incomes.reduce((sum, i) => sum + i.amount, 0);
 
     const getThisWeekTotal = () => {
         const now = new Date();
@@ -56,7 +56,7 @@ export default function Income() {
         startOfWeek.setDate(now.getDate() - now.getDay());
         startOfWeek.setHours(0, 0, 0, 0);
 
-        return income
+        return incomes
             .filter(i => new Date(i.date) >= startOfWeek)
             .reduce((sum, i) => sum + i.amount, 0);
     };
@@ -66,7 +66,7 @@ export default function Income() {
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
 
-        return income
+        return incomes
             .filter(i => {
                 const itemDate = new Date(i.date);
                 return (
@@ -78,13 +78,13 @@ export default function Income() {
     };
 
     const getAverageIncome = () => {
-        return income.length > 0 ? totalAmount / income.length : 0;
+        return incomes.length > 0 ? totalAmount / incomes.length : 0;
     };
 
     const handleExport = () => {
         const csvContent = [
             ['Date', 'Description', 'Category', 'Amount'].join(','),
-            ...income.map(i => [
+            ...incomes.map(i => [
                 new Date(i.date).toLocaleDateString(),
                 i.description,
                 i.category,
@@ -109,7 +109,7 @@ export default function Income() {
                     <div className="min-w-0">
                         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Income</h1>
                         <p className="text-xs sm:text-sm text-muted-foreground">
-                            {paginatedIncome.length} of {income.length} transactions • {formatCurrency(totalAmount)} total
+                            {paginatedIncomes.length} of {incomes.length} transactions • {formatCurrency(totalAmount)} total
                         </p>
                     </div>
                     <div className="flex items-center gap-2 sm:gap-3">
@@ -217,7 +217,7 @@ export default function Income() {
                     </div>
                 </div>
 
-                <IncomeList income={paginatedIncome} />
+                <IncomeList incomes={paginatedIncomes} />
 
                 {totalPages > 1 && (
                     <div className="flex items-center justify-center gap-2 mt-6">

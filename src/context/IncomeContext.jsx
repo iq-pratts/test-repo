@@ -7,17 +7,17 @@ const IncomeContext = createContext();
 export const useIncome = () => useContext(IncomeContext);
 
 export const IncomeProvider = ({ children }) => {
-    const [income, setIncome] = useState([]);
+    const [incomes, setIncomes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({});
     const { user } = useAuth();
 
-    const fetchIncome = useCallback(async () => {
+    const fetchIncomes = useCallback(async () => {
         if (user) {
             setLoading(true);
             try {
                 const incomeData = await firestoreService.fetchData('income', { uid: user.uid, filters });
-                setIncome(incomeData);
+                setIncomes(incomeData);
             } catch (error) {
                 console.error("Error fetching income: ", error);
             }
@@ -26,32 +26,45 @@ export const IncomeProvider = ({ children }) => {
     }, [user, filters]);
 
     useEffect(() => {
-        fetchIncome();
-    }, [fetchIncome]);
+        fetchIncomes();
+    }, [fetchIncomes]);
 
     const addIncome = async (incomeData) => {
         if (user) {
             const newIncome = await firestoreService.addData('income', { uid: user.uid, data: incomeData });
-            setIncome(prev => [newIncome, ...prev]);
+            setIncomes(prev => [newIncome, ...prev]);
         }
     };
 
     const updateIncome = async (id, updatedData) => {
         if (user) {
             await firestoreService.updateData('income', { uid: user.uid, id, data: updatedData });
-            setIncome(prev => prev.map(item => (item.id === id ? { ...item, ...updatedData } : item)));
+            setIncomes(prev => prev.map(item => (item.id === id ? { ...item, ...updatedData } : item)));
         }
     };
 
     const deleteIncome = async (id) => {
         if (user) {
             await firestoreService.deleteData('income', { uid: user.uid, id });
-            setIncome(prev => prev.filter(item => item.id !== id));
+            setIncomes(prev => prev.filter(item => item.id !== id));
         }
     };
 
+    const getMonthlyTotal = useCallback(() => {
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        if (!incomes) return 0;
+        return incomes
+            .filter(item => {
+                if (!item.date || typeof item.date.toDate !== 'function') return false;
+                const itemDate = item.date.toDate();
+                return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
+            })
+            .reduce((total, item) => total + item.amount, 0);
+    }, [incomes]);
+
     return (
-        <IncomeContext.Provider value={{ income, loading, addIncome, updateIncome, deleteIncome, filters, setFilters }}>
+        <IncomeContext.Provider value={{ incomes, loading, addIncome, updateIncome, deleteIncome, filters, setFilters, getMonthlyTotal }}>
             {children}
         </IncomeContext.Provider>
     );

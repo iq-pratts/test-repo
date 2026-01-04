@@ -6,6 +6,7 @@ import { ExpenseProvider } from './context/ExpenseContext';
 import { IncomeProvider } from './context/IncomeContext';
 import { GoalProvider } from './context/GoalContext';
 import { CurrencyProvider } from './context/CurrencyContext';
+import { BudgetProvider } from './context/BudgetContext';
 import { Toaster } from '@/components/ui/sonner';
 
 createRoot(document.getElementById('root')).render(
@@ -14,8 +15,10 @@ createRoot(document.getElementById('root')).render(
             <IncomeProvider>
                 <GoalProvider>
                     <CurrencyProvider>
-                        <App />
-                        <Toaster />
+                        <BudgetProvider>
+                            <App />
+                            <Toaster />
+                        </BudgetProvider>
                     </CurrencyProvider>
                 </GoalProvider>
             </IncomeProvider>

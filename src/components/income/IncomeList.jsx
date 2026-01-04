@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 
-export function IncomeList({ income }) {
+export function IncomeList({ incomes }) {
     const { deleteIncome } = useIncome();
     const { formatCurrency } = useCurrency();
     const [editingIncome, setEditingIncome] = useState(null);
@@ -32,7 +32,7 @@ export function IncomeList({ income }) {
 
     return (
         <div className="space-y-3">
-            {income.map((item) => (
+            {incomes.map((item) => (
                 <div key={item.id} className="bg-card border border-border rounded-lg p-3 sm:p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3 sm:gap-4">
                         <div className="flex-1">
