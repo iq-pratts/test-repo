@@ -61,7 +61,7 @@ export function GoalList({ goals }) {
                         </div>
                         <Progress value={(goal.currentAmount / goal.targetAmount) * 100} />
                         <div className="flex justify-between items-end">
-                            <span className="text-muted-foreground text-sm">Target Date: {new Date(goal.targetDate).toLocaleDateString()}</span>
+                            <span className="text-muted-foreground text-sm">Target Date: {new Date(goal.date).toLocaleDateString()}</span>
                             <Button size="sm" onClick={() => setAddingFundsGoal(goal)}>Add Funds</Button>
                         </div>
                     </div>

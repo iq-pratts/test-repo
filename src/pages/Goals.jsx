@@ -13,6 +13,7 @@ export default function Goals() {
     const { goals, filters, setFilters } = useGoals();
     const [showFilters, setShowFilters] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [activePeriod, setActivePeriod] = useState(null);
 
     const handleFilterChange = (filterName, value) => {
         setCurrentPage(1);
@@ -22,6 +23,33 @@ export default function Goals() {
     const clearFilters = () => {
         setCurrentPage(1);
         setFilters({});
+        setActivePeriod(null);
+    };
+
+    const setPeriod = (period) => {
+        const today = new Date();
+        let startDate, endDate;
+
+        switch (period) {
+            case 'weekly':
+                startDate = new Date(today.setDate(today.getDate() - today.getDay())).toISOString().split('T')[0];
+                endDate = new Date(today.setDate(today.getDate() + 6)).toISOString().split('T')[0];
+                break;
+            case 'monthly':
+                startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+                endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+                break;
+            case 'yearly':
+                startDate = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+                endDate = new Date(today.getFullYear(), 11, 31).toISOString().split('T')[0];
+                break;
+            default:
+                startDate = null;
+                endDate = null;
+        }
+
+        setFilters(prev => ({ ...prev, startDate, endDate }));
+        setActivePeriod(period);
     };
 
     // Pagination
@@ -100,6 +128,11 @@ export default function Goals() {
                                     </Button>
                                 </div>
                             )}
+                        </div>
+                        <div className="flex items-center gap-2 pt-2">
+                            <Button variant={activePeriod === 'weekly' ? 'default' : 'outline'} onClick={() => setPeriod('weekly')}>Weekly</Button>
+                            <Button variant={activePeriod === 'monthly' ? 'default' : 'outline'} onClick={() => setPeriod('monthly')}>Monthly</Button>
+                            <Button variant={activePeriod === 'yearly' ? 'default' : 'outline'} onClick={() => setPeriod('yearly')}>Yearly</Button>
                         </div>
                     </div>
                 )}
