@@ -2,9 +2,34 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Brain, Shield, TrendingUp, Sparkles, ArrowRight, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+// Add your Gemini API key here
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+
+const genAI = new GoogleGenerativeAI(API_KEY);
+
+async function run(prompt) {
+  // For text-only input, use the gemini-pro model
+  const model = genAI.getGenerativeModel({ model: "gemini-pro"});
+
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  const text = response.text();
+  return text;
+}
 
 export default function Advisor() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState(null);
+
+  const handleAnalysis = async () => {
+    setIsAnalyzing(true);
+    const prompt = "Analyze my financial data and provide personalized advice.";
+    const result = await run(prompt);
+    setAnalysis(result);
+    setIsAnalyzing(false);
+  };
 
   return (
     <AppLayout>
@@ -27,16 +52,24 @@ export default function Advisor() {
                 Get real-time spending analysis, budget guardrails, and strategic financial advice tailored to your goals.
               </p>
             </div>
-            <Button 
+            <Button
               size="default"
               className="gap-2 w-full sm:w-auto"
-              onClick={() => setIsAnalyzing(true)}
+              onClick={handleAnalysis}
+              disabled={isAnalyzing}
             >
               <Sparkles className="w-4 h-4" />
-              <span className="text-sm">Analyze Finances</span>
+              <span className="text-sm">{isAnalyzing ? 'Analyzing...' : 'Analyze Finances'}</span>
             </Button>
           </div>
         </div>
+
+        {analysis && (
+          <div className="bg-card rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-border">
+            <h3 className="font-semibold text-sm sm:text-base text-foreground mb-3 sm:mb-4">AI Analysis</h3>
+            <p className="text-sm text-muted-foreground">{analysis}</p>
+          </div>
+        )}
 
         {/* Feature Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -54,9 +87,9 @@ export default function Advisor() {
             <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
               Before making a purchase, let AI analyze if it fits your budget and spending patterns.
             </p>
-            
+
             {/* Sample Response */}
-            <div className="bg-secondary/50 rounded-lg sm:rounded-xl p-3 sm:p-4 space-y-2 sm:space-y-3">
+            {/* <div className="bg-secondary/50 rounded-lg sm:rounded-xl p-3 sm:p-4 space-y-2 sm:space-y-3">
               <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-foreground">
                 <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-success shrink-0" />
                 <span className="truncate">Last Check: $45 for Groceries</span>
@@ -64,7 +97,7 @@ export default function Advisor() {
               <p className="text-xs sm:text-sm text-success">
                 ✓ SAFE: This expense is within your weekly grocery budget.
               </p>
-            </div>
+            </div> */}
 
             <Button variant="outline" className="w-full mt-3 sm:mt-4 gap-2 text-xs sm:text-sm">
               Check a Transaction <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -87,12 +120,12 @@ export default function Advisor() {
             </p>
 
             {/* Sample Response */}
-            <div className="bg-secondary/50 rounded-lg sm:rounded-xl p-3 sm:p-4 space-y-2 sm:space-y-3">
+            {/* <div className="bg-secondary/50 rounded-lg sm:rounded-xl p-3 sm:p-4 space-y-2 sm:space-y-3">
               <p className="text-xs sm:text-sm font-medium text-foreground">Key Insight:</p>
               <p className="text-xs sm:text-sm text-muted-foreground">
                 Your dining expenses increased 23% last month. Consider meal prepping to save ~$150/month.
               </p>
-            </div>
+            </div> */}
 
             <Button variant="outline" className="w-full mt-3 sm:mt-4 gap-2 text-xs sm:text-sm">
               Get Full Analysis <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -101,7 +134,7 @@ export default function Advisor() {
         </div>
 
         {/* AI Status */}
-        <div className="bg-card rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-border">
+        {/* <div className="bg-card rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-border">
           <h3 className="font-semibold text-sm sm:text-base text-foreground mb-3 sm:mb-4">Recent AI Insights</h3>
           <div className="space-y-3 sm:space-y-4">
             <div className="flex items-start gap-2 sm:gap-3 p-3 rounded-lg sm:rounded-xl bg-success/5 border border-success/20">
@@ -119,7 +152,7 @@ export default function Advisor() {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </AppLayout>
   );
