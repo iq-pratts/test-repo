@@ -16,20 +16,20 @@ export function AddGoalDialog() {
     const { addGoal } = useGoals();
     const [name, setName] = useState('');
     const [targetAmount, setTargetAmount] = useState('');
-    const [targetDate, setTargetDate] = useState('');
+    const [date, setDate] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!name || !targetAmount || !targetDate) {
+        if (!name || !targetAmount || !date) {
             alert('Please fill out all fields.');
             return;
         }
 
         try {
-            await addGoal({ name, targetAmount: parseFloat(targetAmount), targetDate, currentAmount: 0 });
+            await addGoal({ name, targetAmount: parseFloat(targetAmount), date, currentAmount: 0 });
             setName('');
             setTargetAmount('');
-            setTargetDate('');
+            setDate('');
             setIsOpen(false);
         } catch (error) {
             console.error("Error adding goal: ", error);
@@ -58,8 +58,8 @@ export function AddGoalDialog() {
                         <Input id="targetAmount" type="number" value={targetAmount} onChange={(e) => setTargetAmount(e.target.value)} />
                     </div>
                     <div>
-                        <label htmlFor="targetDate" className="text-sm font-medium">Target Date</label>
-                        <Input id="targetDate" type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
+                        <label htmlFor="date" className="text-sm font-medium">Target Date</label>
+                        <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
                     </div>
                     <div className="flex justify-end pt-4">
                         <Button type="submit">Add Goal</Button>

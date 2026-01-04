@@ -145,12 +145,15 @@ export default function Income() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-foreground">Category</label>
-                                <Select value={filters.category || ''} onValueChange={(value) => handleFilterChange('category', value)}>
+                                <Select 
+                                    value={filters.category || 'all'} 
+                                    onValueChange={(value) => handleFilterChange('category', value === 'all' ? '' : value)}
+                                >
                                     <SelectTrigger>
                                         <SelectValue placeholder="All Categories" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="">All Categories</SelectItem>
+                                        <SelectItem value="all">All Categories</SelectItem>
                                         {Object.entries(CATEGORY_OPTIONS).map(([key, label]) => (
                                             <SelectItem key={key} value={key}>{label}</SelectItem>
                                         ))}

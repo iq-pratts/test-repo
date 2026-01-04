@@ -13,25 +13,49 @@ import {
 
 const fetchData = async (collectionName, { uid, filters }) => {
     try {
-        let q = query(collection(db, `users/${uid}/${collectionName}`), orderBy('date', 'desc'));
+        const collectionRef = collection(db, `users/${uid}/${collectionName}`);
+        let q;
+        let clientSideFilters = {};
 
-        if (filters) {
-            if (filters.keyword) {
-                q = query(q, where('name', '>=', filters.keyword), where('name', '<=', filters.keyword + '\uf8ff'));
+        if (filters && filters.category) {
+            // If filtering by category, we can't also do a range filter on date in Firestore.
+            // We'll do the date filtering on the client side.
+            q = query(collectionRef, where('category', '==', filters.category), orderBy('date', 'asc'));
+            if(filters.startDate) clientSideFilters.startDate = filters.startDate;
+            if(filters.endDate) clientSideFilters.endDate = filters.endDate;
+        } else {
+            // No category filter, so we can do the date range filtering in Firestore.
+            const constraints = [orderBy('date', 'asc')];
+            if (filters && filters.startDate) {
+                constraints.push(where('date', '>=', filters.startDate));
             }
-            if (filters.category) {
-                q = query(q, where('category', '==', filters.category));
+            if (filters && filters.endDate) {
+                constraints.push(where('date', '<=', filters.endDate));
             }
-            if (filters.startDate) {
-                q = query(q, where('date', '>=', filters.startDate));
-            }
-            if (filters.endDate) {
-                q = query(q, where('date', '<=', filters.endDate));
-            }
+            q = query(collectionRef, ...constraints);
         }
 
         const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Apply client-side filters
+        if (clientSideFilters.startDate) {
+            data = data.filter(item => item.date >= clientSideFilters.startDate);
+        }
+        if (clientSideFilters.endDate) {
+            data = data.filter(item => item.date <= clientSideFilters.endDate);
+        }
+        
+        if (filters && filters.keyword) {
+            const keyword = filters.keyword.toLowerCase();
+            data = data.filter(item => 
+                (item.description && item.description.toLowerCase().includes(keyword)) ||
+                (item.name && item.name.toLowerCase().includes(keyword)) ||
+                (item.category && item.category.toLowerCase().includes(keyword))
+            );
+        }
+
+        return data;
     } catch (error) {
         console.error(`Error fetching ${collectionName}: `, error);
         throw new Error(`Failed to fetch ${collectionName}.`);

@@ -1,46 +1,47 @@
 {
   "indexes": [
     {
-      "collectionGroup": "income",
-      "queryScope": "COLLECTION",
+      "collectionGroup": "expenses",
+      "queryScope": "COLLECTION_GROUP",
       "fields": [
         {
-          "fieldPath": "name",
+          "fieldPath": "category",
           "order": "ASCENDING"
         },
         {
           "fieldPath": "date",
-          "order": "DESCENDING"
+          "order": "ASCENDING"
         }
       ]
     },
     {
-        "collectionGroup": "expenses",
-        "queryScope": "COLLECTION",
-        "fields": [
-          {
-            "fieldPath": "name",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "date",
-            "order": "DESCENDING"
-          }
-        ]
-      },
-      {
-        "collectionGroup": "goals",
-        "queryScope": "COLLECTION",
-        "fields": [
-          {
-            "fieldPath": "name",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "date",
-            "order": "DESCENDING"
-          }
-        ]
-      }
-  ]
+      "collectionGroup": "income",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "category",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "goals",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "category",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
 }
