@@ -34,10 +34,10 @@ export function QuickActions() {
             <span className="text-xs sm:text-sm">AI Advice</span>
           </Button>
         </Link>
-        <Button variant="outline" className="w-full h-auto py-3 sm:py-4 flex-col gap-1.5 sm:gap-2">
+        {/* <Button variant="outline" className="w-full h-auto py-3 sm:py-4 flex-col gap-1.5 sm:gap-2">
           <Download className="w-4 h-4 sm:w-5 sm:h-5 text-info" />
           <span className="text-xs sm:text-sm">Export CSV</span>
-        </Button>
+        </Button> */}
       </div>
 
       <UpdateBudgetDialog
